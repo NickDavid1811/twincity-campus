@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Plus,
@@ -47,6 +47,7 @@ export function Incidents() {
   const [form, setForm] = useState(emptyForm);
   const [analysisMessage, setAnalysisMessage] = useState('');
   const [formError, setFormError] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
     if (draftLocation) {
@@ -103,20 +104,28 @@ export function Incidents() {
     setShowNewIncidentModal(true);
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!form.description.trim()) {
       setAnalysisMessage('');
       setFormError('Escribe una descripción para poder analizar la incidencia.');
       return;
     }
 
-    const suggestion = analyzeIncident(form.description);
+    setIsAnalyzing(true);
+    setFormError('');
+    setAnalysisMessage('Analizando con IA...');
+
+    const { suggestion, source } = await analyzeIncident(form.description);
     setForm((currentForm) => ({
       ...currentForm,
       ...suggestion,
     }));
-    setFormError('');
-    setAnalysisMessage('Análisis generado correctamente.');
+    setIsAnalyzing(false);
+    setAnalysisMessage(
+      source === 'gemini'
+        ? 'Análisis generado con Google AI Studio.'
+        : 'Análisis generado con fallback local. Revisa GEMINI_API_KEY si querías usar Gemini.',
+    );
   };
 
   const handleSave = () => {
@@ -146,7 +155,7 @@ export function Incidents() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl text-foreground mb-1">Gestión de Incidencias</h1>
-          <p className="text-sm text-muted-foreground">Registro inteligente de tickets con apoyo de IA local</p>
+          <p className="text-sm text-muted-foreground">Registro inteligente de tickets con Google AI Studio y fallback local</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex bg-secondary rounded-lg p-1">
@@ -320,7 +329,7 @@ export function Incidents() {
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-xl text-foreground">Nueva incidencia</h2>
-                <p className="text-sm text-muted-foreground">Describe el problema y usa IA local para sugerir clasificación.</p>
+                <p className="text-sm text-muted-foreground">Describe el problema y usa Gemini para sugerir clasificación.</p>
               </div>
               <button onClick={() => setShowNewIncidentModal(false)} className="p-2 hover:bg-secondary rounded-lg transition-colors">
                 <XCircle className="w-5 h-5" />
@@ -345,9 +354,9 @@ export function Incidents() {
                 <textarea className="w-full min-h-28 px-3 py-2 bg-input-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Describe qué ocurre, dónde y qué tan urgente es." />
               </label>
               <div className="md:col-span-2 flex flex-wrap items-center gap-3">
-                <button onClick={handleAnalyze} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors">
+                <button onClick={handleAnalyze} disabled={isAnalyzing} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                   <Sparkles className="w-4 h-4 inline mr-2" />
-                  Analizar con IA
+                  {isAnalyzing ? 'Analizando...' : 'Analizar con IA'}
                 </button>
                 {analysisMessage && <span className="text-sm text-success">{analysisMessage}</span>}
                 {formError && <span className="text-sm text-destructive">{formError}</span>}
@@ -455,3 +464,4 @@ export function Incidents() {
     </div>
   );
 }
+

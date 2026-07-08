@@ -1,4 +1,4 @@
-﻿import type { IncidentCategory, IncidentPriority, IncidentSuggestion } from '../types/incident';
+import type { IncidentCategory, IncidentPriority, IncidentSuggestion } from '../types/incident';
 
 const categoryRules: Array<{
   category: IncidentCategory;
@@ -47,13 +47,13 @@ const priorityRules: Array<{ priority: IncidentPriority; keywords: string[] }> =
 
 const includesAny = (text: string, keywords: string[]) => keywords.some((keyword) => text.includes(keyword));
 
-export function analyzeIncident(description: string): IncidentSuggestion {
+export function analyzeIncidentLocally(description: string): IncidentSuggestion {
   const normalizedDescription = description.toLowerCase().trim();
   const matchedCategory = categoryRules.find((rule) => includesAny(normalizedDescription, rule.keywords));
   const matchedPriority = priorityRules.find((rule) => includesAny(normalizedDescription, rule.keywords));
 
-  // Simulación local de IA basada en reglas y palabras clave. En una versión futura,
-  // esta función puede conectarse a una API real de IA para clasificar incidencias.
+  // Fallback local basado en reglas. Mantiene la demo funcionando si Gemini no está
+  // configurado, no responde o se alcanza el límite gratuito de Google AI Studio.
   return {
     category: matchedCategory?.category ?? 'Otro',
     priority: matchedPriority?.priority ?? 'Media',
@@ -62,4 +62,31 @@ export function analyzeIncident(description: string): IncidentSuggestion {
       matchedCategory?.recommendedAction ??
       'Registrar evidencia, revisar el caso y derivar al área responsable según disponibilidad.',
   };
+}
+
+export async function analyzeIncident(description: string): Promise<{
+  suggestion: IncidentSuggestion;
+  source: 'gemini' | 'local';
+}> {
+  try {
+    const response = await fetch('/api/analyze-incident', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Gemini no disponible');
+    }
+
+    return {
+      suggestion: await response.json() as IncidentSuggestion,
+      source: 'gemini',
+    };
+  } catch {
+    return {
+      suggestion: analyzeIncidentLocally(description),
+      source: 'local',
+    };
+  }
 }
