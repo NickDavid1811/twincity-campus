@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { Incident, IncidentLocationDraft, IncidentStatus } from '../types/incident';
 
 const STORAGE_KEY = 'twincity-incidents';
@@ -50,6 +50,7 @@ interface IncidentContextValue {
   draftLocation: IncidentLocationDraft;
   addIncident: (incident: Omit<Incident, 'id' | 'createdAt' | 'status'> & { status?: IncidentStatus }) => void;
   updateIncidentStatus: (id: string, status: IncidentStatus) => void;
+  deleteIncident: (id: string) => void;
   setDraftLocation: (location: IncidentLocationDraft) => void;
   clearDraftLocation: () => void;
 }
@@ -100,6 +101,9 @@ export function IncidentProvider({ children }: { children: React.ReactNode }) {
       setIncidents((currentIncidents) =>
         currentIncidents.map((incident) => (incident.id === id ? { ...incident, status } : incident)),
       );
+    },
+    deleteIncident: (id) => {
+      setIncidents((currentIncidents) => currentIncidents.filter((incident) => incident.id !== id));
     },
     setDraftLocation,
     clearDraftLocation: () => setDraftLocation(null),

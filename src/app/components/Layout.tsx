@@ -15,7 +15,8 @@ import {
   X,
   Moon,
   Sun,
-  Maximize2
+  Maximize2,
+  Calendar
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -30,6 +31,7 @@ const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'map', label: 'Mapa Campus', icon: Map },
   { id: 'incidents', label: 'Incidencias', icon: AlertCircle },
+  { id: 'reservations', label: 'Reservas', icon: Calendar },
   { id: 'occupancy', label: 'Ocupación', icon: Maximize2 },
   { id: 'users', label: 'Usuarios', icon: Users },
   { id: 'reports', label: 'Reportes', icon: BarChart3 },

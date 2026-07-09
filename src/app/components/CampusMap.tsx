@@ -1,7 +1,9 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import { MapPin, ZoomIn, ZoomOut, Layers, AlertTriangle, CheckCircle2, Send } from 'lucide-react';
 import { useIncidents } from '../context/IncidentContext';
+import { useReservations } from '../context/ReservationContext';
+import { buildingRooms } from '../constants/buildings';
 
 const buildings = [
   { id: 1, name: 'Edificio A', x: 20, y: 30, width: 25, height: 20, status: 'operational', incidents: 2 },
@@ -9,14 +11,6 @@ const buildings = [
   { id: 3, name: 'Edificio C', x: 25, y: 60, width: 22, height: 18, status: 'operational', incidents: 0 },
   { id: 4, name: 'Edificio D', x: 58, y: 58, width: 18, height: 22, status: 'critical', incidents: 8 },
   { id: 5, name: 'Biblioteca', x: 82, y: 35, width: 15, height: 15, status: 'operational', incidents: 1 },
-];
-
-const rooms = [
-  { id: 1, building: 1, name: 'Aula 101', status: 'occupied', capacity: 40, current: 35 },
-  { id: 2, building: 1, name: 'Aula 102', status: 'available', capacity: 40, current: 0 },
-  { id: 3, building: 1, name: 'Aula 201', status: 'occupied', capacity: 50, current: 48 },
-  { id: 4, building: 2, name: 'Lab A', status: 'maintenance', capacity: 30, current: 0 },
-  { id: 5, building: 2, name: 'Lab B', status: 'occupied', capacity: 30, current: 22 },
 ];
 
 const mapIncidents = [
@@ -34,9 +28,10 @@ export function CampusMap({ onReportIncident }: CampusMapProps) {
   const [showIncidents, setShowIncidents] = useState(true);
   const [zoom, setZoom] = useState(1);
   const { incidents, setDraftLocation } = useIncidents();
+  const { reservations } = useReservations();
 
   const selectedBuildingData = buildings.find((building) => building.id === selectedBuilding);
-  const selectedRoom = selectedBuilding ? rooms.find((room) => room.building === selectedBuilding)?.name : undefined;
+  const selectedRoom = selectedBuildingData?.name ? buildingRooms[selectedBuildingData.name]?.[0] : undefined;
   const activeIncidents = incidents.filter((incident) => incident.status !== 'Resuelta').length;
 
   const handleReportIncident = () => {
@@ -186,14 +181,17 @@ export function CampusMap({ onReportIncident }: CampusMapProps) {
                 <div>
                   <p className="text-sm text-muted-foreground mb-3">Espacios</p>
                   <div className="space-y-2">
-                    {rooms.filter((room) => room.building === selectedBuilding).map((room) => (
-                      <div key={room.id} className="flex items-center justify-between p-2 bg-secondary rounded text-sm">
-                        <span>{room.name}</span>
-                        <span className={`px-2 py-0.5 rounded text-xs ${room.status === 'occupied' ? 'bg-success/20 text-success' : room.status === 'available' ? 'bg-primary/20 text-primary' : 'bg-warning/20 text-warning'}`}>
-                          {room.status === 'occupied' ? 'Ocupado' : room.status === 'available' ? 'Disponible' : 'Mantenimiento'}
-                        </span>
-                      </div>
-                    ))}
+                    {selectedBuildingData?.name && buildingRooms[selectedBuildingData.name]?.map((roomName, index) => {
+                      const isOccupied = reservations.some(res => res.building === selectedBuildingData.name && res.room === roomName && res.status === 'Activa');
+                      return (
+                        <div key={index} className="flex items-center justify-between p-2 bg-secondary rounded text-sm">
+                          <span>{roomName}</span>
+                          <span className={`px-2 py-0.5 rounded text-xs ${isOccupied ? 'bg-success/20 text-success' : 'bg-primary/20 text-primary'}`}>
+                            {isOccupied ? 'Ocupado' : 'Disponible'}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

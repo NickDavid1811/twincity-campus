@@ -9,9 +9,11 @@ import { OccupancyDashboard } from './components/OccupancyDashboard';
 import { UserManagement } from './components/UserManagement';
 import { Reports } from './components/Reports';
 import { IncidentProvider } from './context/IncidentContext';
+import { ReservationProvider } from './context/ReservationContext';
+import { Reservations } from './components/Reservations';
 import { Toaster } from './components/ui/sonner';
 
-type View = 'dashboard' | 'map' | 'incidents' | 'occupancy' | 'users' | 'reports';
+type View = 'dashboard' | 'map' | 'incidents' | 'occupancy' | 'users' | 'reports' | 'reservations';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -37,6 +39,8 @@ export default function App() {
         return <CampusMap onReportIncident={() => setCurrentView('incidents')} />;
       case 'incidents':
         return <Incidents />;
+      case 'reservations':
+        return <Reservations onReportIncident={() => setCurrentView('incidents')} />;
       case 'occupancy':
         return <OccupancyDashboard />;
       case 'users':
@@ -51,9 +55,11 @@ export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="dark">
       <IncidentProvider>
-        <Layout currentView={currentView} onViewChange={handleViewChange} onLogout={() => setIsAuthenticated(false)}>
-          {renderView()}
-        </Layout>
+        <ReservationProvider>
+          <Layout currentView={currentView} onViewChange={handleViewChange} onLogout={() => setIsAuthenticated(false)}>
+            {renderView()}
+          </Layout>
+        </ReservationProvider>
       </IncidentProvider>
       <Toaster />
     </ThemeProvider>

@@ -15,7 +15,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIncidents } from '../context/IncidentContext';
+import { useReservations } from '../context/ReservationContext';
 import { analyzeIncident } from '../services/aiIncidentService';
+import { buildingRooms } from '../constants/buildings';
 import type { Incident, IncidentCategory, IncidentPriority, IncidentStatus } from '../types/incident';
 
 const categories: IncidentCategory[] = ['Tecnología', 'Mantenimiento', 'Seguridad', 'Limpieza', 'Infraestructura', 'Otro'];
@@ -43,6 +45,7 @@ const formatDate = (value: string) => new Intl.DateTimeFormat('es-PE', {
 
 export function Incidents() {
   const { incidents, addIncident, updateIncidentStatus, deleteIncident, draftLocation, clearDraftLocation } = useIncidents();
+  const { reservations } = useReservations();
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [showNewIncidentModal, setShowNewIncidentModal] = useState(false);
@@ -346,11 +349,34 @@ export function Incidents() {
               </label>
               <label className="space-y-2">
                 <span className="text-sm text-muted-foreground">Edificio</span>
-                <input className="w-full px-3 py-2 bg-input-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" value={form.building} onChange={(event) => setForm({ ...form, building: event.target.value })} placeholder="Edificio B" />
+                <select 
+                  className="w-full px-3 py-2 bg-input-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" 
+                  value={form.building} 
+                  onChange={(event) => {
+                    setForm({ ...form, building: event.target.value, room: '' });
+                  }}
+                >
+                  <option value="">Selecciona un edificio</option>
+                  {Object.keys(buildingRooms).map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">Aula / ambiente</span>
-                <input className="w-full px-3 py-2 bg-input-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" value={form.room} onChange={(event) => setForm({ ...form, room: event.target.value })} placeholder="Aula 205" />
+                <span className="text-sm text-muted-foreground">Aula / ambiente (Solo espacios ocupados)</span>
+                <select 
+                  className="w-full px-3 py-2 bg-input-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" 
+                  value={form.room} 
+                  onChange={(event) => setForm({ ...form, room: event.target.value })}
+                >
+                  <option value="">Selecciona un ambiente</option>
+                  {form.building && buildingRooms[form.building]
+                    .filter(roomName => reservations.some(res => res.building === form.building && res.room === roomName && res.status === 'Activa'))
+                    .map((roomName) => (
+                      <option key={roomName} value={roomName}>{roomName}</option>
+                    ))
+                  }
+                </select>
               </label>
               <label className="space-y-2 md:col-span-2">
                 <span className="text-sm text-muted-foreground">Descripción</span>
