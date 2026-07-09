@@ -12,19 +12,25 @@ import { IncidentProvider } from './context/IncidentContext';
 import { ReservationProvider } from './context/ReservationContext';
 import { Reservations } from './components/Reservations';
 import { Toaster } from './components/ui/sonner';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 type View = 'dashboard' | 'map' | 'incidents' | 'occupancy' | 'users' | 'reports' | 'reservations';
 
-export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function AppContent() {
+  const { isAuthenticated, login, logout, user } = useAuth();
   const [currentView, setCurrentView] = useState<View>('dashboard');
 
+  // Enforce Role-Based Access Control
+  if (user?.role === 'user') {
+    const allowedViewsForUser = ['map', 'incidents', 'reservations'];
+    if (!allowedViewsForUser.includes(currentView)) {
+      // Force user to a safe view if they try to access restricted ones
+      setCurrentView('map');
+    }
+  }
+
   if (!isAuthenticated) {
-    return (
-      <ThemeProvider attribute="class" defaultTheme="dark">
-        <Login onLogin={() => setIsAuthenticated(true)} />
-      </ThemeProvider>
-    );
+    return <Login onLogin={login} />;
   }
 
   const handleViewChange = (view: string) => {
@@ -48,20 +54,29 @@ export default function App() {
       case 'reports':
         return <Reports />;
       default:
-        return <Dashboard />;
+        return user?.role === 'user' ? <CampusMap onReportIncident={() => setCurrentView('incidents')} /> : <Dashboard />;
     }
   };
 
   return (
+    <Layout currentView={currentView} onViewChange={handleViewChange} onLogout={logout}>
+      {renderView()}
+    </Layout>
+  );
+}
+
+export default function App() {
+  return (
     <ThemeProvider attribute="class" defaultTheme="dark">
-      <IncidentProvider>
-        <ReservationProvider>
-          <Layout currentView={currentView} onViewChange={handleViewChange} onLogout={() => setIsAuthenticated(false)}>
-            {renderView()}
-          </Layout>
-        </ReservationProvider>
-      </IncidentProvider>
+      <AuthProvider>
+        <IncidentProvider>
+          <ReservationProvider>
+            <AppContent />
+          </ReservationProvider>
+        </IncidentProvider>
+      </AuthProvider>
       <Toaster />
     </ThemeProvider>
   );
 }
+

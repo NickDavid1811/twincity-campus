@@ -1,4 +1,4 @@
-﻿export type IncidentCategory =
+export type IncidentCategory =
   | 'Tecnología'
   | 'Mantenimiento'
   | 'Seguridad'
@@ -22,6 +22,7 @@ export interface Incident {
   assignedTo: string;
   recommendedAction: string;
   createdAt: string;
+  createdBy?: string;
 }
 
 export type IncidentSuggestion = Pick<

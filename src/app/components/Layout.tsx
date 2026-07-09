@@ -19,6 +19,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useAuth } from '../context/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -40,6 +41,12 @@ const menuItems = [
 export function Layout({ children, currentView, onViewChange, onLogout }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
+
+  const allowedMenuItems = menuItems.filter((item) => {
+    if (user?.role === 'admin') return true;
+    return ['map', 'incidents', 'reservations'].includes(item.id);
+  });
 
   return (
     <div className="h-screen w-full flex bg-background overflow-hidden">
@@ -64,7 +71,7 @@ export function Layout({ children, currentView, onViewChange, onLogout }: Layout
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {menuItems.map((item) => {
+          {allowedMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
 
@@ -142,11 +149,13 @@ export function Layout({ children, currentView, onViewChange, onLogout }: Layout
 
             <div className="flex items-center gap-3 pl-3 border-l border-border">
               <div className="text-right">
-                <p className="text-sm">Admin Usuario</p>
-                <p className="text-xs text-muted-foreground">Administrador</p>
+                <p className="text-sm">{user?.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {user?.role === 'admin' ? 'Administrador' : 'Estudiante'}
+                </p>
               </div>
               <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground">AU</span>
+                <span className="text-primary-foreground">{user?.initials}</span>
               </div>
             </div>
           </div>

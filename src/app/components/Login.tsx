@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Building2, Lock, Mail } from 'lucide-react';
+import { Building2, Lock, Mail, ShieldAlert, User as UserIcon } from 'lucide-react';
+import type { User } from '../types/auth';
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (user: User) => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
@@ -12,7 +13,34 @@ export function Login({ onLogin }: LoginProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin();
+    // Default fallback if someone submits the form normally
+    onLogin({
+      id: 'usr-1',
+      name: 'Admin Usuario',
+      email: email || 'admin@campus.edu',
+      role: 'admin',
+      initials: 'AU'
+    });
+  };
+
+  const handleMockLogin = (role: 'admin' | 'user') => {
+    if (role === 'admin') {
+      onLogin({
+        id: 'usr-admin',
+        name: 'Admin Principal',
+        email: 'admin@campus.edu',
+        role: 'admin',
+        initials: 'AP'
+      });
+    } else {
+      onLogin({
+        id: 'usr-common',
+        name: 'Estudiante Común',
+        email: 'estudiante@campus.edu',
+        role: 'user',
+        initials: 'EC'
+      });
+    }
   };
 
   return (
@@ -83,6 +111,28 @@ export function Login({ onLogin }: LoginProps) {
             >
               Iniciar Sesión
             </motion.button>
+            <div className="flex gap-2 pt-2 border-t border-border mt-4">
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleMockLogin('admin')}
+                className="flex-1 flex items-center justify-center gap-2 bg-secondary hover:bg-secondary/80 text-foreground py-2 rounded-lg transition-colors text-xs"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                Ingresar como Admin
+              </motion.button>
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleMockLogin('user')}
+                className="flex-1 flex items-center justify-center gap-2 bg-secondary hover:bg-secondary/80 text-foreground py-2 rounded-lg transition-colors text-xs"
+              >
+                <UserIcon className="w-4 h-4" />
+                Ingresar como Usuario
+              </motion.button>
+            </div>
           </form>
 
           <div className="px-8 pb-8 pt-4 border-t border-border">

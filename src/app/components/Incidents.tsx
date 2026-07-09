@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import { useIncidents } from '../context/IncidentContext';
 import { useReservations } from '../context/ReservationContext';
+import { useAuth } from '../context/AuthContext';
 import { analyzeIncident } from '../services/aiIncidentService';
 import { buildingRooms } from '../constants/buildings';
 import type { Incident, IncidentCategory, IncidentPriority, IncidentStatus } from '../types/incident';
@@ -46,6 +47,7 @@ const formatDate = (value: string) => new Intl.DateTimeFormat('es-PE', {
 export function Incidents() {
   const { incidents, addIncident, updateIncidentStatus, deleteIncident, draftLocation, clearDraftLocation } = useIncidents();
   const { reservations } = useReservations();
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [showNewIncidentModal, setShowNewIncidentModal] = useState(false);
@@ -136,7 +138,9 @@ export function Incidents() {
 
   const handleSave = () => {
     if (!form.title.trim() || !form.building.trim() || !form.room.trim() || !form.description.trim()) {
-      setFormError('Completa título, edificio, ambiente y descripción antes de guardar.');
+      const errorMsg = 'Completa título, edificio, ambiente y descripción antes de guardar.';
+      setFormError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
@@ -144,7 +148,9 @@ export function Incidents() {
       ...form,
       assignedTo: form.assignedTo || 'Mesa de ayuda',
       recommendedAction: form.recommendedAction || 'Registrar evidencia y derivar al área responsable.',
+      createdBy: user?.id,
     });
+    toast.success('Incidencia reportada exitosamente');
     resetForm();
     setShowNewIncidentModal(false);
     setViewMode('list');
@@ -160,39 +166,49 @@ export function Incidents() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl text-foreground mb-1">Gestión de Incidencias</h1>
-          <p className="text-sm text-muted-foreground">Registro inteligente de tickets con Google AI Studio y fallback local</p>
+          <h1 className="text-2xl text-foreground mb-1">
+            {user?.role === 'admin' ? 'Gestión de Incidencias' : 'Reporte de Incidencias'}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {user?.role === 'admin' 
+              ? 'Registro inteligente de tickets con Google AI Studio y fallback local' 
+              : 'Reporta cualquier problema en los espacios del campus'}
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex bg-secondary rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={`px-4 py-2 rounded text-sm transition-colors ${viewMode === 'kanban' ? 'bg-card shadow-sm' : ''}`}
-            >
-              Kanban
+        {user?.role === 'admin' && (
+          <div className="flex items-center gap-3">
+            <div className="flex bg-secondary rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={`px-4 py-2 rounded text-sm transition-colors ${viewMode === 'kanban' ? 'bg-card shadow-sm' : ''}`}
+              >
+                Kanban
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-4 py-2 rounded text-sm transition-colors ${viewMode === 'list' ? 'bg-card shadow-sm' : ''}`}
+              >
+                Lista
+              </button>
+            </div>
+            <button className="px-4 py-2 bg-secondary rounded-lg text-sm hover:bg-secondary/80 transition-colors">
+              <Filter className="w-4 h-4 inline mr-2" />
+              Filtros
             </button>
             <button
-              onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded text-sm transition-colors ${viewMode === 'list' ? 'bg-card shadow-sm' : ''}`}
+              onClick={handleOpenNewIncident}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors"
             >
-              Lista
+              <Plus className="w-4 h-4 inline mr-2" />
+              Nueva Incidencia
             </button>
           </div>
-          <button className="px-4 py-2 bg-secondary rounded-lg text-sm hover:bg-secondary/80 transition-colors">
-            <Filter className="w-4 h-4 inline mr-2" />
-            Filtros
-          </button>
-          <button
-            onClick={handleOpenNewIncident}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4 inline mr-2" />
-            Nueva Incidencia
-          </button>
-        </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {user?.role === 'admin' ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -316,6 +332,56 @@ export function Incidents() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+        </>
+      ) : (
+        <div className="space-y-6 mt-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-medium text-foreground">Mis Incidencias Reportadas</h2>
+            <button
+              onClick={handleOpenNewIncident}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors flex items-center"
+            >
+              <Plus className="w-4 h-4 inline mr-2" />
+              Nueva Incidencia
+            </button>
+          </div>
+          {incidents.filter(i => i.createdBy === user?.id).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 bg-card border border-border rounded-lg">
+              <AlertTriangle className="w-16 h-16 text-muted-foreground mb-4 opacity-50" />
+              <p className="text-muted-foreground text-center max-w-md">
+                Aún no has reportado ninguna incidencia. Puedes reportar problemas en los espacios del campus que tengan una reserva activa.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-secondary border-b border-border">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs text-muted-foreground uppercase">Ticket</th>
+                    <th className="px-6 py-3 text-left text-xs text-muted-foreground uppercase">Título</th>
+                    <th className="px-6 py-3 text-left text-xs text-muted-foreground uppercase">Ubicación</th>
+                    <th className="px-6 py-3 text-left text-xs text-muted-foreground uppercase">Estado</th>
+                    <th className="px-6 py-3 text-left text-xs text-muted-foreground uppercase">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {incidents.filter(i => i.createdBy === user?.id).map(incident => (
+                    <tr key={incident.id} className="hover:bg-secondary/50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-medium">{incident.id}</td>
+                      <td className="px-6 py-4 text-sm">{incident.title}</td>
+                      <td className="px-6 py-4 text-sm">{incident.building} - {incident.room}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded text-xs ${getStatusColor(incident.status)}`}>{incident.status}</span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">{formatDate(incident.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

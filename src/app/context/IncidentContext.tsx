@@ -29,6 +29,7 @@ const initialIncidents: Incident[] = [
     assignedTo: 'Mantenimiento',
     recommendedAction: 'Programar inspección física del ambiente y coordinar reparación preventiva.',
     createdAt: '2026-07-08T10:15:00.000Z',
+    createdBy: 'usr-common',
   },
   {
     id: 'INC-1003',
