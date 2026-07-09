@@ -1,4 +1,4 @@
-﻿import { motion } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Users,
   Building2,
@@ -72,10 +72,6 @@ export function Dashboard() {
         <div>
           <h1 className="text-2xl text-foreground mb-1">Panel de Control</h1>
           <p className="text-sm text-muted-foreground">Vista general del campus e incidencias registradas</p>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Activity className="w-4 h-4 text-success animate-pulse" />
-          <span>Sincronizado con localStorage</span>
         </div>
       </div>
 

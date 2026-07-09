@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { Login } from './components/Login';
 import { Dashboard } from './components/Dashboard';
@@ -9,6 +9,7 @@ import { OccupancyDashboard } from './components/OccupancyDashboard';
 import { UserManagement } from './components/UserManagement';
 import { Reports } from './components/Reports';
 import { IncidentProvider } from './context/IncidentContext';
+import { Toaster } from './components/ui/sonner';
 
 type View = 'dashboard' | 'map' | 'incidents' | 'occupancy' | 'users' | 'reports';
 
@@ -54,6 +55,7 @@ export default function App() {
           {renderView()}
         </Layout>
       </IncidentProvider>
+      <Toaster />
     </ThemeProvider>
   );
 }

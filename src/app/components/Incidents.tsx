@@ -10,8 +10,10 @@ import {
   MapPin,
   Calendar,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useIncidents } from '../context/IncidentContext';
 import { analyzeIncident } from '../services/aiIncidentService';
 import type { Incident, IncidentCategory, IncidentPriority, IncidentStatus } from '../types/incident';
@@ -40,10 +42,11 @@ const formatDate = (value: string) => new Intl.DateTimeFormat('es-PE', {
 }).format(new Date(value));
 
 export function Incidents() {
-  const { incidents, addIncident, updateIncidentStatus, draftLocation, clearDraftLocation } = useIncidents();
+  const { incidents, addIncident, updateIncidentStatus, deleteIncident, draftLocation, clearDraftLocation } = useIncidents();
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [showNewIncidentModal, setShowNewIncidentModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [analysisMessage, setAnalysisMessage] = useState('');
   const [formError, setFormError] = useState('');
@@ -412,9 +415,18 @@ export function Incidents() {
                 </div>
                 <p className="text-sm text-muted-foreground">Ticket {selectedIncident.id}</p>
               </div>
-              <button onClick={() => setSelectedIncident(null)} className="p-2 hover:bg-secondary rounded-lg transition-colors">
-                <XCircle className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors"
+                  title="Eliminar incidencia"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+                <button onClick={() => setSelectedIncident(null)} className="p-2 hover:bg-secondary rounded-lg transition-colors">
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="space-y-6">
@@ -457,6 +469,53 @@ export function Incidents() {
                 <Calendar className="w-4 h-4" />
                 Creada el {formatDate(selectedIncident.createdAt)}
               </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {showDeleteConfirm && selectedIncident && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            className="bg-card border border-border rounded-lg max-w-sm w-full p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-destructive" />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium text-foreground">Eliminar incidencia</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  ¿Estás seguro de que deseas eliminar esta incidencia? Esta acción no se puede deshacer.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors text-sm font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  deleteIncident(selectedIncident.id);
+                  setSelectedIncident(null);
+                  setShowDeleteConfirm(false);
+                  toast.success('Incidencia eliminada exitosamente');
+                }}
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors text-sm font-medium"
+              >
+                Eliminar
+              </button>
             </div>
           </motion.div>
         </motion.div>
